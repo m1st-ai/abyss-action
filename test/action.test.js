@@ -14,9 +14,9 @@ test("uploads a binary and writes its metadata to outputs", async () => {
     requests.push({ method: request.method, url: request.url, body: Buffer.concat(chunks).toString() });
 
     response.setHeader("content-type", "application/json");
-    if (request.url === "/v1/ci/artifacts") response.end(JSON.stringify({ artifactId: "artifact-1", alreadyUploaded: false, upload: { key: "ci-artifacts/app.apk", url: `${base}/upload` } }));
+    if (request.url === "/v1/github-actions/artifacts") response.end(JSON.stringify({ artifactId: "artifact-1", alreadyUploaded: false, upload: { key: "github-actions-artifacts/app.apk", url: `${base}/upload` } }));
     else if (request.url === "/upload") response.end("{}");
-    else if (request.url === "/v1/ci/artifacts/artifact-1/complete") response.end(JSON.stringify({ scanId: "scan-1" }));
+    else if (request.url === "/v1/github-actions/artifacts/artifact-1/complete") response.end(JSON.stringify({ scanId: "scan-1" }));
     else { response.statusCode = 404; response.end("{}"); }
   });
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
@@ -54,14 +54,14 @@ test("uploads a binary and writes its metadata to outputs", async () => {
 
   assert.equal(result.code, 0, result.stderr);
   const outputs = await readFile(output, "utf8");
-  assert.match(outputs, /android-key<<[^\n]+\nci-artifacts\/app\.apk\n/);
+  assert.match(outputs, /android-key<<[^\n]+\ngithub-actions-artifacts\/app\.apk\n/);
   assert.match(outputs, /android-scan-id<<[^\n]+\nscan-1\n/);
-  assert.match(outputs, /android<<[^\n]+\n\{"name":"app\.apk","sizeBytes":13,"sha256":"[0-9a-f]{64}","artifactId":"artifact-1","scanId":"scan-1","s3Key":"ci-artifacts\/app\.apk","deduplicated":false\}\n/);
+  assert.match(outputs, /android<<[^\n]+\n\{"name":"app\.apk","sizeBytes":13,"sha256":"[0-9a-f]{64}","artifactId":"artifact-1","scanId":"scan-1","s3Key":"github-actions-artifacts\/app\.apk","deduplicated":false\}\n/);
   assert.match(outputs, /ios<<[^\n]+\n\n/);
   assert.equal(requests.find((item) => item.url === "/upload").body, "mobile-binary");
   assert.equal(requests.find((item) => item.url === "/upload").method, "PUT");
-  assert.equal(requests.filter((item) => item.url === "/v1/ci/artifacts").length, 1);
-  const registration = JSON.parse(requests.find((item) => item.url === "/v1/ci/artifacts").body);
+  assert.equal(requests.filter((item) => item.url === "/v1/github-actions/artifacts").length, 1);
+  const registration = JSON.parse(requests.find((item) => item.url === "/v1/github-actions/artifacts").body);
   assert.equal(registration.applicationId, "app-1");
   assert.equal(registration.pullRequestNumber, 42);
   assert.equal(registration.commitSha, "a".repeat(40));

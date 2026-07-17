@@ -39,9 +39,9 @@ outputs:
   ios-key:
     description: Storage key for the uploaded iOS binary, or an empty string.
   android-scan-id:
-    description: Abyss CI scan ID for Android, or an empty string.
+    description: Abyss GitHub Actions scan ID for Android, or an empty string.
   ios-scan-id:
-    description: Abyss CI scan ID for iOS, or an empty string.
+    description: Abyss GitHub Actions scan ID for iOS, or an empty string.
 
 runs:
   using: node24

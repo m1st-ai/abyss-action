@@ -56,7 +56,7 @@ async function upload(base, key, applicationId, context, platform, file, version
   const name = basename(file);
   const digest = await sha256(file);
   console.log(`Uploading ${name} (${info.size} bytes)...`);
-  const target = await request(base, key, "/v1/ci/artifacts", {
+  const target = await request(base, key, "/v1/github-actions/artifacts", {
     method: "POST",
     body: JSON.stringify({
       applicationId,
@@ -76,7 +76,7 @@ async function upload(base, key, applicationId, context, platform, file, version
     }),
   });
   if (target.alreadyUploaded) {
-    const completed = await request(base, key, `/v1/ci/artifacts/${encodeURIComponent(target.artifactId)}/complete`, { method: "POST" });
+    const completed = await request(base, key, `/v1/github-actions/artifacts/${encodeURIComponent(target.artifactId)}/complete`, { method: "POST" });
     return { name, sizeBytes: info.size, sha256: digest, artifactId: target.artifactId, scanId: completed.scanId, s3Key: "", deduplicated: true };
   }
   const response = await fetch(target.upload.url, {
@@ -86,7 +86,7 @@ async function upload(base, key, applicationId, context, platform, file, version
     headers: { "Content-Length": String(info.size) },
   });
   if (!response.ok) throw new Error(`Upload failed: ${response.status} ${await response.text()}`);
-  const completed = await request(base, key, `/v1/ci/artifacts/${encodeURIComponent(target.artifactId)}/complete`, { method: "POST" });
+  const completed = await request(base, key, `/v1/github-actions/artifacts/${encodeURIComponent(target.artifactId)}/complete`, { method: "POST" });
   return { name, sizeBytes: info.size, sha256: digest, artifactId: target.artifactId, scanId: completed.scanId, s3Key: target.upload.key, deduplicated: false };
 }
 
