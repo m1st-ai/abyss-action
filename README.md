@@ -24,7 +24,6 @@ jobs:
         uses: m1st-ai/abyss-action@v1
         with:
           api-key: ${{ secrets.ABYSS_API_KEY }}
-          api-url: https://api.example.com
           application-id: ${{ vars.ABYSS_APPLICATION_ID }}
           version-name: 1.4.0
           android: path/to/app-release.apk
@@ -43,7 +42,7 @@ jobs:
 | 名前 | 必須 | 既定値 | 説明 |
 | --- | --- | --- | --- |
 | `api-key` | Yes | - | Abyss APIキー。必ずGitHub Actions secretから渡してください。 |
-| `api-url` | Yes | - | Abyssの公開APIベースURL。 |
+| `api-url` | No | `https://api.abyss.m1st.ai` | Abyssの公開APIベースURL。検証環境やセルフホスト環境を使う場合だけ指定します。 |
 | `application-id` | Yes | - | Repositoryに紐付けたAbyss Application ID。 |
 | `version-name` | No | - | PRコメントと確認画面に表示するリリースバージョン。 |
 | `version-code` | No | - | 任意のビルド番号。 |

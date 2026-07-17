@@ -12,7 +12,8 @@ inputs:
     required: true
   api-url:
     description: Abyss public API base URL, without a trailing slash.
-    required: true
+    required: false
+    default: https://api.abyss.m1st.ai
   application-id:
     description: Abyss application associated with this repository.
     required: true

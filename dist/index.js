@@ -92,7 +92,7 @@ async function upload(base, key, applicationId, context, platform, file, version
 
 async function run() {
   const key = input("api-key", { required: true });
-  const base = input("api-url", { required: true }).replace(/\/$/, "");
+  const base = (input("api-url") || "https://api.abyss.m1st.ai").replace(/\/$/, "");
   const applicationId = input("application-id", { required: true });
   const versionName = input("version-name");
   const versionCode = input("version-code");
