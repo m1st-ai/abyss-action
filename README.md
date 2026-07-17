@@ -57,8 +57,8 @@ jobs:
 | `ios` | iOSアップロード結果のJSON（`name`、`sizeBytes`、`fileCount`、`s3Key`）。未指定時は空文字。 |
 | `android-key` | Androidバイナリの保存キー。未指定時は空文字。 |
 | `ios-key` | iOSバイナリの保存キー。未指定時は空文字。 |
-| `android-scan-id` | AndroidのCI Scan ID。未指定時は空文字。 |
-| `ios-scan-id` | iOSのCI Scan ID。未指定時は空文字。 |
+| `android-scan-id` | AndroidのGitHub Actions Scan ID。未指定時は空文字。 |
+| `ios-scan-id` | iOSのGitHub Actions Scan ID。未指定時は空文字。 |
 
 このActionはPull Requestイベント専用です。アップロード完了後、Abyss GitHub AppがPRへ解析開始リンクをコメントします。ユーザーがAbyss上でクレジット消費を確認すると解析とGitHub Check Runが開始されます。
 
