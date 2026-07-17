@@ -1,6 +1,6 @@
 # Abyss Action
 
-GitHub ActionsからAbyssへAndroid（APK/AAB）・iOS（IPA）のバイナリをアップロードする、顧客向けの公開JavaScript Actionです。このActionはバイナリをアップロードするだけで、解析の作成や開始は行いません。
+GitHub ActionsからAbyssへAndroid（APK/AAB）・iOS（IPA）のリリース候補を登録する、顧客向けの公開JavaScript Actionです。Pull Request、commit SHA、バイナリSHA-256を一緒に登録します。解析は開始せず、Abyss上での明示承認を待ちます。
 
 ## 使い方
 
@@ -24,7 +24,8 @@ jobs:
         uses: m1st-ai/abyss-action@v1
         with:
           api-key: ${{ secrets.ABYSS_API_KEY }}
-          api-url: https://api.example.com
+          application-id: ${{ vars.ABYSS_APPLICATION_ID }}
+          version-name: 1.4.0
           android: path/to/app-release.apk
           ios: path/to/app.ipa
 
@@ -41,7 +42,10 @@ jobs:
 | 名前 | 必須 | 既定値 | 説明 |
 | --- | --- | --- | --- |
 | `api-key` | Yes | - | Abyss APIキー。必ずGitHub Actions secretから渡してください。 |
-| `api-url` | Yes | - | Abyssの公開APIベースURL。 |
+| `api-url` | No | `https://api.abyss.m1st.ai` | Abyssの公開APIベースURL。検証環境やセルフホスト環境を使う場合だけ指定します。 |
+| `application-id` | Yes | - | Repositoryに紐付けたAbyss Application ID。 |
+| `version-name` | No | - | PRコメントと確認画面に表示するリリースバージョン。 |
+| `version-code` | No | - | 任意のビルド番号。 |
 | `android` | 条件付き | - | APKまたはAABへのパス。`ios` とどちらか一方は必須です。 |
 | `ios` | 条件付き | - | IPAへのパス。`android` とどちらか一方は必須です。 |
 
@@ -53,8 +57,10 @@ jobs:
 | `ios` | iOSアップロード結果のJSON（`name`、`sizeBytes`、`fileCount`、`s3Key`）。未指定時は空文字。 |
 | `android-key` | Androidバイナリの保存キー。未指定時は空文字。 |
 | `ios-key` | iOSバイナリの保存キー。未指定時は空文字。 |
+| `android-scan-id` | AndroidのCI Scan ID。未指定時は空文字。 |
+| `ios-scan-id` | iOSのCI Scan ID。未指定時は空文字。 |
 
-アップロード後の解析開始やその他のCI連携処理は、Abyss側の連携機能が担当します。
+このActionはPull Requestイベント専用です。アップロード完了後、Abyss GitHub AppがPRへ解析開始リンクをコメントします。ユーザーがAbyss上でクレジット消費を確認すると解析とGitHub Check Runが開始されます。
 
 ## セキュリティ
 

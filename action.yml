@@ -12,7 +12,17 @@ inputs:
     required: true
   api-url:
     description: Abyss public API base URL, without a trailing slash.
+    required: false
+    default: https://api.abyss.m1st.ai
+  application-id:
+    description: Abyss application associated with this repository.
     required: true
+  version-name:
+    description: Optional release version shown in Abyss and the pull request comment.
+    required: false
+  version-code:
+    description: Optional platform build number.
+    required: false
   android:
     description: Path to an Android APK or AAB. Either android or ios is required.
     required: false
@@ -28,6 +38,10 @@ outputs:
     description: Storage key for the uploaded Android binary, or an empty string.
   ios-key:
     description: Storage key for the uploaded iOS binary, or an empty string.
+  android-scan-id:
+    description: Abyss CI scan ID for Android, or an empty string.
+  ios-scan-id:
+    description: Abyss CI scan ID for iOS, or an empty string.
 
 runs:
   using: node24
