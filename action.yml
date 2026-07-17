@@ -1,5 +1,5 @@
-name: Abyss mobile app analysis
-description: Upload Android and iOS binaries to Abyss and start an analysis.
+name: Upload mobile binaries to Abyss
+description: Upload Android and iOS binaries to Abyss for CI integration.
 author: m1st-ai
 
 branding:
@@ -13,33 +13,21 @@ inputs:
   api-url:
     description: Abyss public API base URL, without a trailing slash.
     required: true
-  application-id:
-    description: Application ID to associate with the analysis.
-    required: true
   android:
     description: Path to an Android APK or AAB. Either android or ios is required.
     required: false
   ios:
     description: Path to an iOS IPA. Either android or ios is required.
     required: false
-  name:
-    description: Display name for the analysis.
-    required: false
-    default: GitHub Actions analysis
-  wait:
-    description: Wait until the analysis reaches a terminal state.
-    required: false
-    default: "true"
-  interval:
-    description: Polling interval in milliseconds when wait is true.
-    required: false
-    default: "10000"
-
 outputs:
-  analysis-id:
-    description: ID of the created analysis.
-  status:
-    description: Latest analysis status observed by the action.
+  android:
+    description: JSON metadata for the uploaded Android binary, or an empty string.
+  ios:
+    description: JSON metadata for the uploaded iOS binary, or an empty string.
+  android-key:
+    description: Storage key for the uploaded Android binary, or an empty string.
+  ios-key:
+    description: Storage key for the uploaded iOS binary, or an empty string.
 
 runs:
   using: node24

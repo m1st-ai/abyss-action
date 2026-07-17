@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { spawn } from "node:child_process";
 import test from "node:test";
 
-test("uploads a binary, starts an analysis, waits, and writes outputs", async () => {
+test("uploads a binary and writes its metadata to outputs", async () => {
   const requests = [];
   const server = createServer(async (request, response) => {
     const chunks = [];
@@ -16,9 +16,6 @@ test("uploads a binary, starts an analysis, waits, and writes outputs", async ()
     response.setHeader("content-type", "application/json");
     if (request.url === "/v1/uploads") response.end(JSON.stringify({ key: "uploads/app.apk", url: `${base}/upload` }));
     else if (request.url === "/upload") response.end("{}");
-    else if (request.url === "/v1/analyses") response.end(JSON.stringify({ id: "analysis-1", status: "created" }));
-    else if (request.url === "/v1/analyses/analysis-1/start") response.end(JSON.stringify({ id: "analysis-1", status: "running" }));
-    else if (request.url === "/v1/analyses/analysis-1") response.end(JSON.stringify({ id: "analysis-1", status: "succeeded" }));
     else { response.statusCode = 404; response.end("{}"); }
   });
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
@@ -35,11 +32,7 @@ test("uploads a binary, starts an analysis, waits, and writes outputs", async ()
         ...process.env,
         INPUT_API_KEY: "secret-key",
         INPUT_API_URL: base,
-        INPUT_APPLICATION_ID: "app-1",
         INPUT_ANDROID: binary,
-        INPUT_NAME: "CI analysis",
-        INPUT_WAIT: "true",
-        INPUT_INTERVAL: "0",
         GITHUB_OUTPUT: output,
       },
     });
@@ -50,8 +43,12 @@ test("uploads a binary, starts an analysis, waits, and writes outputs", async ()
   server.close();
 
   assert.equal(result.code, 0, result.stderr);
-  assert.match(await readFile(output, "utf8"), /analysis-id=analysis-1/);
-  assert.match(await readFile(output, "utf8"), /status=succeeded/);
+  const outputs = await readFile(output, "utf8");
+  assert.match(outputs, /android-key<<[^\n]+\nuploads\/app\.apk\n/);
+  assert.match(outputs, /android<<[^\n]+\n\{"name":"app\.apk","sizeBytes":13,"fileCount":1,"s3Key":"uploads\/app\.apk"\}\n/);
+  assert.match(outputs, /ios<<[^\n]+\n\n/);
   assert.equal(requests.find((item) => item.url === "/upload").body, "mobile-binary");
-  assert.equal(JSON.parse(requests.find((item) => item.url === "/v1/analyses").body).applicationId, "app-1");
+  assert.equal(requests.find((item) => item.url === "/upload").method, "PUT");
+  assert.equal(requests.filter((item) => item.url === "/v1/uploads").length, 1);
+  assert.equal(requests.some((item) => item.url.startsWith("/v1/analyses")), false);
 });

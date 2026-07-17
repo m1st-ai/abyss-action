@@ -2,12 +2,13 @@
 
 ## Scope
 
-This repository contains the reusable GitHub Action that wraps the Abyss CLI mobile-binary upload and analysis flow.
+This public repository contains the reusable GitHub Action for uploading customer mobile binaries to Abyss.
 
 ## Source of truth
 
-- The CLI implementation lives at `abyss-app/web/packages/cli/src/index.ts` in the `m1st-ai/abyss-app` repository.
-- Keep request paths, payloads, terminal statuses, authentication, and upload behavior in `dist/index.js` aligned with that CLI.
+- `m1st-ai/abyss-app` is private. This Action must remain standalone and must not fetch, import, or expose files from that repository at runtime.
+- Keep the `/v1/uploads` request, Bearer authentication, and signed-URL PUT behavior compatible with the Abyss public API.
+- This Action uploads binaries only. It must not create or start an analysis.
 - Action-specific input validation, GitHub outputs, annotations, and failure semantics belong in this repository.
 
 ## Development

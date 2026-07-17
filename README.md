@@ -1,6 +1,6 @@
 # Abyss Action
 
-GitHub ActionsからAbyssへAndroid（APK/AAB）・iOS（IPA）のバイナリをアップロードし、解析を開始するJavaScript Actionです。Abyss CLIのアップロード・解析開始フローをActionとして利用できます。
+GitHub ActionsからAbyssへAndroid（APK/AAB）・iOS（IPA）のバイナリをアップロードする、顧客向けの公開JavaScript Actionです。このActionはバイナリをアップロードするだけで、解析の作成や開始は行いません。
 
 ## 使い方
 
@@ -25,16 +25,16 @@ jobs:
         with:
           api-key: ${{ secrets.ABYSS_API_KEY }}
           api-url: https://api.example.com
-          application-id: your-application-id
           android: path/to/app-release.apk
           ios: path/to/app.ipa
-          name: ${{ github.repository }} @ ${{ github.sha }}
 
-      - name: Show analysis
-        run: echo "Analysis ${{ steps.abyss.outputs.analysis-id }} finished with ${{ steps.abyss.outputs.status }}"
+      - name: Show upload keys
+        run: |
+          echo "Android: ${{ steps.abyss.outputs.android-key }}"
+          echo "iOS: ${{ steps.abyss.outputs.ios-key }}"
 ```
 
-`android` と `ios` はどちらか一方だけでも指定できます。両方を指定した場合は同じ解析にまとめてアップロードされます。
+`android` と `ios` はどちらか一方だけでも指定できます。両方を指定した場合は順番にアップロードされます。
 
 ## Inputs
 
@@ -42,21 +42,19 @@ jobs:
 | --- | --- | --- | --- |
 | `api-key` | Yes | - | Abyss APIキー。必ずGitHub Actions secretから渡してください。 |
 | `api-url` | Yes | - | Abyssの公開APIベースURL。 |
-| `application-id` | Yes | - | 解析対象のApplication ID。 |
 | `android` | 条件付き | - | APKまたはAABへのパス。`ios` とどちらか一方は必須です。 |
 | `ios` | 条件付き | - | IPAへのパス。`android` とどちらか一方は必須です。 |
-| `name` | No | `GitHub Actions analysis` | 解析の表示名。 |
-| `wait` | No | `true` | 解析が終了状態になるまで待機します。 |
-| `interval` | No | `10000` | 待機時のポーリング間隔（ミリ秒）。 |
 
 ## Outputs
 
 | 名前 | 説明 |
 | --- | --- |
-| `analysis-id` | 作成された解析のID。 |
-| `status` | Actionが最後に確認した解析ステータス。 |
+| `android` | Androidアップロード結果のJSON（`name`、`sizeBytes`、`fileCount`、`s3Key`）。未指定時は空文字。 |
+| `ios` | iOSアップロード結果のJSON（`name`、`sizeBytes`、`fileCount`、`s3Key`）。未指定時は空文字。 |
+| `android-key` | Androidバイナリの保存キー。未指定時は空文字。 |
+| `ios-key` | iOSバイナリの保存キー。未指定時は空文字。 |
 
-`wait: true` の場合、解析結果が `failed` または `ai_failed` ならstepも失敗します。`partial` は解析結果を確認できるようstepを成功扱いにします。`wait: false` の場合は解析開始直後に終了し、`status` はその時点の値です。
+アップロード後の解析開始やその他のCI連携処理は、Abyss側の連携機能が担当します。
 
 ## セキュリティ
 
