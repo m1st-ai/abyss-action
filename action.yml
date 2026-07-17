@@ -1,0 +1,34 @@
+name: Upload mobile binaries to Abyss
+description: Upload Android and iOS binaries to Abyss for CI integration.
+author: m1st-ai
+
+branding:
+  icon: upload-cloud
+  color: purple
+
+inputs:
+  api-key:
+    description: Abyss public API key. Pass this from a GitHub Actions secret.
+    required: true
+  api-url:
+    description: Abyss public API base URL, without a trailing slash.
+    required: true
+  android:
+    description: Path to an Android APK or AAB. Either android or ios is required.
+    required: false
+  ios:
+    description: Path to an iOS IPA. Either android or ios is required.
+    required: false
+outputs:
+  android:
+    description: JSON metadata for the uploaded Android binary, or an empty string.
+  ios:
+    description: JSON metadata for the uploaded iOS binary, or an empty string.
+  android-key:
+    description: Storage key for the uploaded Android binary, or an empty string.
+  ios-key:
+    description: Storage key for the uploaded iOS binary, or an empty string.
+
+runs:
+  using: node24
+  main: dist/index.js
