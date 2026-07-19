@@ -11,10 +11,11 @@ test("uploads a binary and writes its metadata to outputs", async () => {
   const server = createServer(async (request, response) => {
     const chunks = [];
     for await (const chunk of request) chunks.push(chunk);
-    requests.push({ method: request.method, url: request.url, body: Buffer.concat(chunks).toString() });
+    requests.push({ method: request.method, url: request.url, authorization: request.headers.authorization, body: Buffer.concat(chunks).toString() });
 
     response.setHeader("content-type", "application/json");
-    if (request.url === "/v1/github-actions/artifacts") response.end(JSON.stringify({ artifactId: "artifact-1", alreadyUploaded: false, upload: { key: "github-actions-artifacts/app.apk", url: `${base}/upload` } }));
+    if (request.url?.startsWith("/oidc")) response.end(JSON.stringify({ value: "github-oidc-token" }));
+    else if (request.url === "/v1/github-actions/artifacts") response.end(JSON.stringify({ artifactId: "artifact-1", alreadyUploaded: false, upload: { key: "github-actions-artifacts/app.apk", url: `${base}/upload` } }));
     else if (request.url === "/upload") response.end("{}");
     else if (request.url === "/v1/github-actions/artifacts/artifact-1/complete") response.end(JSON.stringify({ scanId: "scan-1" }));
     else { response.statusCode = 404; response.end("{}"); }
@@ -33,10 +34,10 @@ test("uploads a binary and writes its metadata to outputs", async () => {
       cwd: process.cwd(),
       env: {
         ...process.env,
-        INPUT_API_KEY: "secret-key",
         INPUT_API_URL: base,
-        INPUT_APPLICATION_ID: "app-1",
         INPUT_ANDROID: binary,
+        ACTIONS_ID_TOKEN_REQUEST_URL: `${base}/oidc?request=token`,
+        ACTIONS_ID_TOKEN_REQUEST_TOKEN: "runner-request-token",
         GITHUB_EVENT_PATH: eventPath,
         GITHUB_REPOSITORY: "customer/mobile",
         GITHUB_REPOSITORY_ID: "123",
@@ -62,8 +63,11 @@ test("uploads a binary and writes its metadata to outputs", async () => {
   assert.equal(requests.find((item) => item.url === "/upload").method, "PUT");
   assert.equal(requests.filter((item) => item.url === "/v1/github-actions/artifacts").length, 1);
   const registration = JSON.parse(requests.find((item) => item.url === "/v1/github-actions/artifacts").body);
-  assert.equal(registration.applicationId, "app-1");
-  assert.equal(registration.pullRequestNumber, 42);
-  assert.equal(registration.commitSha, "a".repeat(40));
+  assert.equal("applicationId" in registration, false);
+  assert.equal("pullRequestNumber" in registration, false);
+  assert.equal("commitSha" in registration, false);
+  assert.equal(requests.filter((item) => item.url.startsWith("/oidc")).length, 2);
+  assert.equal(requests.find((item) => item.url.startsWith("/oidc")).authorization, "Bearer runner-request-token");
+  assert.equal(requests.find((item) => item.url === "/v1/github-actions/artifacts").authorization, "Bearer github-oidc-token");
   assert.equal(requests.some((item) => item.url.startsWith("/v1/analyses")), false);
 });
