@@ -5,7 +5,7 @@ import { createHash, randomUUID } from "node:crypto";
 const OIDC_AUDIENCE = "https://abyss.m1st.ai/github-actions";
 
 function input(name, { required = false } = {}) {
-  const value = process.env[`INPUT_${name.replaceAll("-", "_").toUpperCase()}`]?.trim();
+  const value = process.env[`INPUT_${name.replaceAll(" ", "_").toUpperCase()}`]?.trim();
   if (required && !value) throw new Error(`Input '${name}' is required`);
   return value;
 }
@@ -19,6 +19,41 @@ function setOutput(name, value) {
   else console.log(`::set-output name=${name}::${value}`);
 }
 
+function networkErrorCode(error) {
+  if (!error || typeof error !== "object") return undefined;
+  if ("code" in error && typeof error.code === "string") return error.code;
+  if ("cause" in error) {
+    const causeCode = networkErrorCode(error.cause);
+    if (causeCode) return causeCode;
+  }
+  if ("errors" in error && Array.isArray(error.errors)) {
+    for (const nested of error.errors) {
+      const nestedCode = networkErrorCode(nested);
+      if (nestedCode) return nestedCode;
+    }
+  }
+  return undefined;
+}
+
+async function fetchWithContext(context, input, init) {
+  const retryableCodes = new Set(["EAI_AGAIN", "ECONNRESET", "ENETUNREACH", "ENOTFOUND", "ETIMEDOUT", "UND_ERR_CONNECT_TIMEOUT"]);
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      return await fetch(input, init);
+    }
+    catch (error) {
+      const errorCode = networkErrorCode(error);
+      const code = errorCode ? ` (${errorCode})` : "";
+      if (attempt === 3 || !errorCode || !retryableCodes.has(errorCode)) {
+        throw new Error(`${context} failed${code}`);
+      }
+      console.warn(`${context} failed${code}; retrying (${attempt}/3)...`);
+      await new Promise((resolve) => setTimeout(resolve, 250 * attempt));
+    }
+  }
+  throw new Error(`${context} failed`);
+}
+
 async function oidcToken() {
   const requestUrl = process.env.ACTIONS_ID_TOKEN_REQUEST_URL;
   const requestToken = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN;
@@ -27,7 +62,7 @@ async function oidcToken() {
   }
   const url = new URL(requestUrl);
   url.searchParams.set("audience", OIDC_AUDIENCE);
-  const response = await fetch(url, { headers: { Authorization: `Bearer ${requestToken}` } });
+  const response = await fetchWithContext("GitHub OIDC token request", url, { headers: { Authorization: `Bearer ${requestToken}` } });
   if (!response.ok) throw new Error(`Could not obtain GitHub OIDC token: ${response.status}`);
   const payload = await response.json();
   if (typeof payload.value !== "string" || !payload.value) throw new Error("GitHub OIDC response did not contain a token");
@@ -36,8 +71,9 @@ async function oidcToken() {
 
 async function request(base, path, init) {
   const token = await oidcToken();
-  const response = await fetch(`${base}${path}`, {
+  const response = await fetchWithContext(`Abyss API request (${path})`, `${base}${path}`, {
     ...init,
+    redirect: "manual",
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
@@ -80,17 +116,19 @@ async function upload(base, platform, file, versionName, versionCode) {
       sha256: digest,
     }),
   });
+  console.log("Artifact registration complete.");
   if (target.alreadyUploaded) {
     const completed = await request(base, `/v1/github-actions/artifacts/${encodeURIComponent(target.artifactId)}/complete`, { method: "POST" });
     return { name, sizeBytes: info.size, sha256: digest, artifactId: target.artifactId, scanId: completed.scanId, s3Key: "", deduplicated: true };
   }
-  const response = await fetch(target.upload.url, {
+  const response = await fetchWithContext("Binary upload request", target.upload.url, {
     method: "PUT",
     body: createReadStream(file),
     duplex: "half",
     headers: { "Content-Length": String(info.size) },
   });
   if (!response.ok) throw new Error(`Upload failed: ${response.status} ${await response.text()}`);
+  console.log("Binary upload complete.");
   const completed = await request(base, `/v1/github-actions/artifacts/${encodeURIComponent(target.artifactId)}/complete`, { method: "POST" });
   return { name, sizeBytes: info.size, sha256: digest, artifactId: target.artifactId, scanId: completed.scanId, s3Key: target.upload.key, deduplicated: false };
 }
