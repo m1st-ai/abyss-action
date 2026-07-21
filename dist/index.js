@@ -36,14 +36,22 @@ function networkErrorCode(error) {
 }
 
 async function fetchWithContext(context, input, init) {
-  try {
-    return await fetch(input, init);
+  const retryableCodes = new Set(["EAI_AGAIN", "ECONNRESET", "ENETUNREACH", "ENOTFOUND", "ETIMEDOUT", "UND_ERR_CONNECT_TIMEOUT"]);
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      return await fetch(input, init);
+    }
+    catch (error) {
+      const errorCode = networkErrorCode(error);
+      const code = errorCode ? ` (${errorCode})` : "";
+      if (attempt === 3 || !errorCode || !retryableCodes.has(errorCode)) {
+        throw new Error(`${context} failed${code}`);
+      }
+      console.warn(`${context} failed${code}; retrying (${attempt}/3)...`);
+      await new Promise((resolve) => setTimeout(resolve, 250 * attempt));
+    }
   }
-  catch (error) {
-    const errorCode = networkErrorCode(error);
-    const code = errorCode ? ` (${errorCode})` : "";
-    throw new Error(`${context} failed${code}`);
-  }
+  throw new Error(`${context} failed`);
 }
 
 async function oidcToken() {
