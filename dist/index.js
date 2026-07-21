@@ -71,7 +71,7 @@ async function oidcToken() {
 
 async function request(base, path, init) {
   const token = await oidcToken();
-  const response = await fetchWithContext("Abyss API request", `${base}${path}`, {
+  const response = await fetchWithContext(`Abyss API request (${path})`, `${base}${path}`, {
     ...init,
     headers: {
       Authorization: `Bearer ${token}`,
@@ -115,6 +115,7 @@ async function upload(base, platform, file, versionName, versionCode) {
       sha256: digest,
     }),
   });
+  console.log("Artifact registration complete.");
   if (target.alreadyUploaded) {
     const completed = await request(base, `/v1/github-actions/artifacts/${encodeURIComponent(target.artifactId)}/complete`, { method: "POST" });
     return { name, sizeBytes: info.size, sha256: digest, artifactId: target.artifactId, scanId: completed.scanId, s3Key: "", deduplicated: true };
@@ -126,6 +127,7 @@ async function upload(base, platform, file, versionName, versionCode) {
     headers: { "Content-Length": String(info.size) },
   });
   if (!response.ok) throw new Error(`Upload failed: ${response.status} ${await response.text()}`);
+  console.log("Binary upload complete.");
   const completed = await request(base, `/v1/github-actions/artifacts/${encodeURIComponent(target.artifactId)}/complete`, { method: "POST" });
   return { name, sizeBytes: info.size, sha256: digest, artifactId: target.artifactId, scanId: completed.scanId, s3Key: target.upload.key, deduplicated: false };
 }
