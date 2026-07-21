@@ -34,7 +34,7 @@ test("uploads a binary and writes its metadata to outputs", async () => {
       cwd: process.cwd(),
       env: {
         ...process.env,
-        INPUT_API_URL: base,
+        "INPUT_API-URL": base,
         INPUT_ANDROID: binary,
         ACTIONS_ID_TOKEN_REQUEST_URL: `${base}/oidc?request=token`,
         ACTIONS_ID_TOKEN_REQUEST_TOKEN: "runner-request-token",
@@ -95,7 +95,7 @@ test("identifies the failed network phase without leaking a signed URL", async (
       cwd: process.cwd(),
       env: {
         ...process.env,
-        INPUT_API_URL: base,
+        "INPUT_API-URL": base,
         INPUT_ANDROID: binary,
         ACTIONS_ID_TOKEN_REQUEST_URL: `${base}/oidc`,
         ACTIONS_ID_TOKEN_REQUEST_TOKEN: "runner-request-token",

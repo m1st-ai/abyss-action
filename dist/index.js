@@ -5,7 +5,7 @@ import { createHash, randomUUID } from "node:crypto";
 const OIDC_AUDIENCE = "https://abyss.m1st.ai/github-actions";
 
 function input(name, { required = false } = {}) {
-  const value = process.env[`INPUT_${name.replaceAll("-", "_").toUpperCase()}`]?.trim();
+  const value = process.env[`INPUT_${name.replaceAll(" ", "_").toUpperCase()}`]?.trim();
   if (required && !value) throw new Error(`Input '${name}' is required`);
   return value;
 }
