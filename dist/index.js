@@ -73,6 +73,7 @@ async function request(base, path, init) {
   const token = await oidcToken();
   const response = await fetchWithContext(`Abyss API request (${path})`, `${base}${path}`, {
     ...init,
+    redirect: "manual",
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
