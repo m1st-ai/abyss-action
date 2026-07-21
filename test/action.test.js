@@ -71,3 +71,44 @@ test("uploads a binary and writes its metadata to outputs", async () => {
   assert.equal(requests.find((item) => item.url === "/v1/github-actions/artifacts").authorization, "Bearer github-oidc-token");
   assert.equal(requests.some((item) => item.url.startsWith("/v1/analyses")), false);
 });
+
+test("identifies the failed network phase without leaking a signed URL", async () => {
+  const signedUrl = "http://127.0.0.1:1/upload?X-Amz-Signature=must-not-leak";
+  const server = createServer((request, response) => {
+    response.setHeader("content-type", "application/json");
+    if (request.url?.startsWith("/oidc")) response.end(JSON.stringify({ value: "github-oidc-token" }));
+    else if (request.url === "/v1/github-actions/artifacts") {
+      response.end(JSON.stringify({ artifactId: "artifact-1", alreadyUploaded: false, upload: { key: "artifact.apk", url: signedUrl } }));
+    }
+    else response.end("{}");
+  });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  const directory = await mkdtemp(join(tmpdir(), "abyss-action-error-"));
+  const binary = join(directory, "app.apk");
+  const eventPath = join(directory, "event.json");
+  await writeFile(binary, "mobile-binary");
+  await writeFile(eventPath, JSON.stringify({ pull_request: { number: 42 } }));
+
+  const result = await new Promise((resolve) => {
+    const child = spawn(process.execPath, ["dist/index.js"], {
+      cwd: process.cwd(),
+      env: {
+        ...process.env,
+        INPUT_API_URL: base,
+        INPUT_ANDROID: binary,
+        ACTIONS_ID_TOKEN_REQUEST_URL: `${base}/oidc`,
+        ACTIONS_ID_TOKEN_REQUEST_TOKEN: "runner-request-token",
+        GITHUB_EVENT_PATH: eventPath,
+      },
+    });
+    let stderr = "";
+    child.stderr.on("data", (chunk) => { stderr += chunk; });
+    child.on("close", (code) => resolve({ code, stderr }));
+  });
+  server.close();
+
+  assert.equal(result.code, 1);
+  assert.match(result.stderr, /Binary upload request failed/);
+  assert.doesNotMatch(result.stderr, /X-Amz-Signature|must-not-leak/);
+});
